@@ -1,0 +1,119 @@
+{
+  "application": "中文敏感数据体检台",
+  "version": "0.1.0",
+  "generated_at_utc": "2026-10-25T12:50:05.055908+00:00",
+  "mode": "mask",
+  "summary": {
+    "rows": 6,
+    "columns": 6,
+    "candidates": 12,
+    "processed_fragments": 10,
+    "retained_candidates": 2,
+    "affected_cells": 10,
+    "categories": {
+      "手机号": 5,
+      "电子邮箱": 4,
+      "18位身份证候选": 3
+    }
+  },
+  "entries": [
+    {
+      "data_row": 1,
+      "column_number": 3,
+      "category": "手机号",
+      "masked_preview": "138****0001",
+      "action": "mask",
+      "rule_check": "符合手机号格式；仍需结合字段用途确认"
+    },
+    {
+      "data_row": 1,
+      "column_number": 4,
+      "category": "电子邮箱",
+      "masked_preview": "d***@example.com",
+      "action": "mask",
+      "rule_check": "符合常见邮箱格式"
+    },
+    {
+      "data_row": 1,
+      "column_number": 5,
+      "category": "18位身份证候选",
+      "masked_preview": "999999********0016",
+      "action": "mask",
+      "rule_check": "日期与校验位通过；未核实行政区或真实身份"
+    },
+    {
+      "data_row": 1,
+      "column_number": 6,
+      "category": "手机号",
+      "masked_preview": "138****0001",
+      "action": "mask",
+      "rule_check": "符合手机号格式；仍需结合字段用途确认"
+    },
+    {
+      "data_row": 2,
+      "column_number": 3,
+      "category": "手机号",
+      "masked_preview": "139****0002",
+      "action": "mask",
+      "rule_check": "符合手机号格式；仍需结合字段用途确认"
+    },
+    {
+      "data_row": 2,
+      "column_number": 4,
+      "category": "电子邮箱",
+      "masked_preview": "c***@example.org",
+      "action": "mask",
+      "rule_check": "符合常见邮箱格式"
+    },
+    {
+      "data_row": 2,
+      "column_number": 5,
+      "category": "18位身份证候选",
+      "masked_preview": "999999********002X",
+      "action": "mask",
+      "rule_check": "日期与校验位通过；未核实行政区或真实身份"
+    },
+    {
+      "data_row": 2,
+      "column_number": 6,
+      "category": "电子邮箱",
+      "masked_preview": "c***@example.org",
+      "action": "mask",
+      "rule_check": "符合常见邮箱格式"
+    },
+    {
+      "data_row": 3,
+      "column_number": 6,
+      "category": "手机号",
+      "masked_preview": "138****5678",
+      "action": "retained",
+      "rule_check": "符合手机号格式；仍需结合字段用途确认"
+    },
+    {
+      "data_row": 4,
+      "column_number": 4,
+      "category": "电子邮箱",
+      "masked_preview": "d***@example.com",
+      "action": "mask",
+      "rule_check": "符合常见邮箱格式"
+    },
+    {
+      "data_row": 4,
+      "column_number": 5,
+      "category": "18位身份证候选",
+      "masked_preview": "999999********0010",
+      "action": "retained",
+      "rule_check": "校验位不匹配，仅列为疑似"
+    },
+    {
+      "data_row": 6,
+      "column_number": 3,
+      "category": "手机号",
+      "masked_preview": "+86 137****0003",
+      "action": "mask",
+      "rule_check": "符合手机号格式；仍需结合字段用途确认"
+    }
+  ],
+  "scope": "规则候选检查；未覆盖姓名、地址、图像或所有敏感信息，不构成匿名化证明。",
+  "report_content": "不包含原始完整命中值、原始文件名、原始列名；掩码预览仍保留部分特征。"
+}

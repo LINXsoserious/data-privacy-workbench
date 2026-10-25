@@ -1,0 +1,17 @@
+Data Privacy Workbench / 中文敏感数据体检台
+Copyright 2026 Data Privacy Workbench contributors.
+
+This project adapts the file-upload and Streamlit interaction approach from:
+  Shubhamsaboo/awesome-llm-apps
+  starter_ai_agents/ai_data_analysis_agent/ai_data_analyst.py
+  https://github.com/Shubhamsaboo/awesome-llm-apps
+  Reference revision: 6c16b23f1bacd0fdf240bb5141ef45e59e82c306
+
+Upstream is licensed under the Apache License, Version 2.0.
+An unchanged reference is included in docs/upstream/ai_data_analyst.py.txt.
+
+Modifications: removed model and API-key dependencies; implemented deterministic
+candidate scanning, reviewed masking/removal, bounded in-memory file handling,
+dedicated spreadsheet-safe CSV export, reports, UI, and tests.
+
+No affiliation or endorsement by upstream authors is claimed.

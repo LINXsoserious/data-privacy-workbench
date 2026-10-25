@@ -1,0 +1,16 @@
+{
+  "repository": "Shubhamsaboo/awesome-llm-apps",
+  "revision": "6c16b23f1bacd0fdf240bb5141ef45e59e82c306",
+  "files": [
+    {
+      "url": "https://raw.githubusercontent.com/Shubhamsaboo/awesome-llm-apps/6c16b23f1bacd0fdf240bb5141ef45e59e82c306/LICENSE",
+      "local_path": "LICENSE",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Shubhamsaboo/awesome-llm-apps/6c16b23f1bacd0fdf240bb5141ef45e59e82c306/starter_ai_agents/ai_data_analysis_agent/ai_data_analyst.py",
+      "local_path": "docs/upstream/ai_data_analyst.py.txt",
+      "sha256": "46a53e78dadca478ea5d306d4e6399783df01c0c4fdac28dedd1ee53f054c798"
+    }
+  ]
+}
