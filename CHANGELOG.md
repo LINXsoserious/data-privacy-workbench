@@ -1,10 +1,17 @@
 # Changelog
 
+## 0.2.0 — 2026-10-26
+
+- Add selectable Chinese / English interface text, validation messages, and report descriptions using explicit local dictionaries.
+- Preserve active uploads, detection rules, treatment modes, scan results, and human review decisions across language changes.
+- Keep original data and JSON protocol keys unchanged, including legacy category-count keys; localize only application-generated text.
+- Provide complete English and Chinese READMEs and regression coverage for both languages and state preservation.
+
 ## 0.1.0 — 2026-10-25
 
-- 首个可运行版本：CSV / XLSX 上传与合成演示。
-- 手机号、常见邮箱、18 位身份证候选检查。
-- 单候选人工复核、掩码与移除片段、前后对照。
-- CSV 与 JSON 专用下载入口、公式前缀防护。
-- 输入保真、资源上限、报告最小化、GitHub Actions 测试配置。
-- 保留上游参考代码、来源和 Apache-2.0 许可证。
+- Initial working version with CSV / XLSX upload and a synthetic sample.
+- Detect mobile numbers, common email addresses, and 18-character Chinese ID candidates.
+- Review individual candidates, mask or remove fragments, and compare original and processed data.
+- Dedicated CSV / JSON downloads with spreadsheet-formula prefix protection.
+- Input fidelity and resource limits, minimized reports, and GitHub Actions tests.
+- Preserve upstream reference code, provenance, and the Apache-2.0 license.

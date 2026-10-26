@@ -6,6 +6,8 @@ import re
 
 import pandas as pd
 
+from .i18n import translate
+
 
 LABELS = {"phone": "手机号", "email": "电子邮箱", "id_card": "18位身份证候选"}
 MAX_FINDINGS = 10000
@@ -33,21 +35,21 @@ class Finding:
     recommended: bool
 
 
-def _id_check(value: str) -> tuple[bool, str]:
+def _id_check(value: str, lang: str = "zh") -> tuple[bool, str]:
     try:
         birthday = date(int(value[6:10]), int(value[10:12]), int(value[12:14]))
         if birthday > date.today():
-            return False, "出生日期在未来，仅列为疑似"
+            return False, translate("reason_future_date", lang)
     except ValueError:
-        return False, "出生日期无效，仅列为疑似"
+        return False, translate("reason_invalid_date", lang)
     weights = (7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2)
     check = "10X98765432"[sum(int(n) * w for n, w in zip(value[:17], weights)) % 11]
     if value[-1].upper() != check:
-        return False, "校验位不匹配，仅列为疑似"
-    return True, "日期与校验位通过；未核实行政区或真实身份"
+        return False, translate("reason_checksum", lang)
+    return True, translate("reason_id_passed", lang)
 
 
-def mask_value(kind: str, value: str) -> str:
+def mask_value(kind: str, value: str, lang: str = "zh") -> str:
     if kind == "phone":
         return value[:-11] + value[-11:-8] + "****" + value[-4:]
     if kind == "email":
@@ -55,13 +57,13 @@ def mask_value(kind: str, value: str) -> str:
         return (local[0] + "***" if len(local) > 1 else "*") + "@" + domain
     if kind == "id_card":
         return value[:6] + "********" + value[-4:]
-    raise ValueError("不支持的敏感信息类型")
+    raise ValueError(translate("unsupported_kind", lang))
 
 
-def scan_dataframe(frame: pd.DataFrame, enabled: set[str] | None = None) -> list[Finding]:
+def scan_dataframe(frame: pd.DataFrame, enabled: set[str] | None = None, lang: str = "zh") -> list[Finding]:
     enabled = set(LABELS) if enabled is None else set(enabled)
     if not enabled <= set(LABELS):
-        raise ValueError("存在不支持的识别规则")
+        raise ValueError(translate("unsupported_rules", lang))
     findings = []
     for row_index, row in enumerate(frame.itertuples(index=False, name=None)):
         for column_index, cell in enumerate(row):
@@ -76,10 +78,10 @@ def scan_dataframe(frame: pd.DataFrame, enabled: set[str] | None = None) -> list
                     if any(match.start() < f.end and f.start < match.end() for f in cell_findings):
                         continue
                     if kind == "id_card":
-                        recommended, reason = _id_check(match.group())
+                        recommended, reason = _id_check(match.group(), lang)
                     else:
                         recommended = True
-                        reason = "符合手机号格式；仍需结合字段用途确认" if kind == "phone" else "符合常见邮箱格式"
+                        reason = translate("reason_phone" if kind == "phone" else "reason_email", lang)
                     cell_findings.append(Finding(
                         id=f"r{row_index}-c{column_index}-{kind}-{match.start()}-{match.end()}",
                         row=row_index, column_index=column_index, kind=kind,
@@ -88,30 +90,30 @@ def scan_dataframe(frame: pd.DataFrame, enabled: set[str] | None = None) -> list
                     ))
             findings.extend(sorted(cell_findings, key=lambda finding: finding.start))
             if len(findings) > MAX_FINDINGS:
-                raise ValueError("候选超过 10,000 个，请拆分文件后再检查；本次未生成部分结果。")
+                raise ValueError(translate("too_many_findings", lang))
     return findings
 
 
-def apply_redactions(frame: pd.DataFrame, findings: list[Finding], selected_ids: set[str], mode: str = "mask") -> pd.DataFrame:
+def apply_redactions(frame: pd.DataFrame, findings: list[Finding], selected_ids: set[str], mode: str = "mask", lang: str = "zh") -> pd.DataFrame:
     if mode not in {"mask", "redact"}:
-        raise ValueError("处理方式必须为 mask 或 redact")
+        raise ValueError(translate("invalid_mode", lang))
     selected_ids = set(selected_ids)
     if not selected_ids <= {finding.id for finding in findings}:
-        raise ValueError("复核记录与当前候选不一致，请重新检查。")
+        raise ValueError(translate("stale_review", lang))
     grouped = {}
     for finding in findings:
         if finding.id in selected_ids:
             if finding.row >= len(frame) or finding.column_index >= len(frame.columns):
-                raise ValueError("数据已变化，请重新检查。")
+                raise ValueError(translate("stale_data", lang))
             text = str(frame.iat[finding.row, finding.column_index])
             if text[finding.start:finding.end] != finding.value:
-                raise ValueError("数据已变化，请重新检查。")
+                raise ValueError(translate("stale_data", lang))
             grouped.setdefault((finding.row, finding.column_index), []).append(finding)
     output = frame.copy(deep=True).astype(object)
     for (row, column), matches in grouped.items():
         text = str(output.iat[row, column])
         for finding in sorted(matches, key=lambda f: f.start, reverse=True):
-            replacement = mask_value(finding.kind, finding.value) if mode == "mask" else "[已删除]"
+            replacement = mask_value(finding.kind, finding.value, lang) if mode == "mask" else translate("redacted_marker", lang)
             text = text[:finding.start] + replacement + text[finding.end:]
         output.iat[row, column] = text
     return output

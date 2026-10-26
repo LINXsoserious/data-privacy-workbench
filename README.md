@@ -1,29 +1,20 @@
-# ◈ 中文敏感数据体检台
+# ◈ Data Privacy Workbench
 
-**Data Privacy Workbench** — 为 CSV / Excel 分享前增加一次可复核的隐私检查。
+**English** | [简体中文](README.zh-CN.md)
+
+A reviewable privacy check before sharing CSV / Excel files: find candidates, reject false positives, mask or remove selected fragments, then download the processed table and an inspection report.
 
 [![Tests](https://github.com/LINXsoserious/data-privacy-workbench/actions/workflows/tests.yml/badge.svg)](https://github.com/LINXsoserious/data-privacy-workbench/actions/workflows/tests.yml)
 
-![应用截图](docs/screenshot.png)
+![English interface in v0.2](docs/screenshot-en.jpg)
 
-上传表格 → 检查手机号、邮箱和身份证候选 → 取消误报 → 掩码或移除片段 → 下载处理结果与报告。
+The [Chinese screenshot](docs/screenshot.png) preserves the v0.1 interface record. Version 0.2 supports both languages from the sidebar.
 
-Python 3.11+ · Streamlit · 无模型调用 · 无 API 密钥 · Apache-2.0
+Python 3.11+ · Streamlit · v0.2.0 · No model calls · No API keys · Apache-2.0
 
-## 直接体验
+## Install and run
 
-启动后默认载入 **6 条合成记录**。点击「开始检查」，得到 12 个候选，其中 11 个默认勾选、1 个无效校验位候选默认保留。
-
-演示中有两个刻意保留的边界：
-
-1. 第 3 条数据中的订单号 `13812345678` 符合手机号格式，却是业务编码。取消其「处理」勾选，观察处理数从 11 变成 10、保留候选从 1 变成 2。
-2. 第 4 条数据的证件候选校验位不匹配，默认不处理；可以根据实际用途决定是否仍需移除。
-
-示例标记为合成数据；证件示例使用未核实的 `999999` 行政区段，仅用于演示结构与校验位检查。它不表示真实签发的身份证号码。
-
-已提供与截图状态对应的 [处理后 CSV](docs/demo-output/redacted_data.csv) 和 [检查报告 JSON](docs/demo-output/privacy_report.json)，不运行应用也能先查看输出格式。
-
-## 运行
+Windows PowerShell:
 
 ```powershell
 python -m venv .venv
@@ -31,9 +22,9 @@ python -m venv .venv
 & .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
-也可以在 Windows PowerShell 中运行 `./run.ps1`：首次创建项目虚拟环境并安装依赖，以后直接启动。安装依赖需要联网，应用的数据处理不需要网络连接。
+Alternatively, run `./run.ps1` in PowerShell. It creates the project virtual environment and installs dependencies on the first run, then starts the app on subsequent runs. Dependency installation needs network access; application data processing does not.
 
-macOS / Linux：
+macOS / Linux:
 
 ```bash
 python3 -m venv .venv
@@ -42,76 +33,101 @@ python -m pip install -r requirements.txt
 python -m streamlit run app.py
 ```
 
-## 与上游示例相比改了什么
+Open the local address printed by Streamlit. The app starts with a synthetic sample; no upload is required to try the workflow.
 
-基于 [awesome-llm-apps / AI Data Analysis Agent](https://github.com/Shubhamsaboo/awesome-llm-apps/tree/6c16b23f1bacd0fdf240bb5141ef45e59e82c306/starter_ai_agents/ai_data_analysis_agent) 的上传与 Streamlit 交互思路重新组织实现。
+## Interface language and preserved state
 
-| 内容 | 上游示例 | 本项目 v0.1 |
-| --- | --- | --- |
-| 主要用途 | 自然语言数据分析 | 分享前的敏感信息检查与处理 |
-| 执行依赖 | GPT-4o、Agno、DuckDB 工具 | 确定性规则、Pandas、OpenPyXL |
-| 文件处理 | 转换类型并写入临时 CSV | 内存处理，保留 CSV 文本编号与字面 NA |
-| 复核 | 没有隐私候选复核流程 | 每个候选可单独取消，显示检查理由 |
-| 脱敏 | 未实现 | 掩码 / 移除命中片段，多命中不修改其他文字 |
-| 导出 | 分析回答与界面展示 | 专用 CSV 下载按钮防护公式起始字符；JSON 记录处理选择 |
-| 验证 | 示例应用 | 核心行为测试与 Streamlit 界面流程测试 |
+Choose **English** or **简体中文** in the sidebar language selector. Chinese is the default to preserve existing behavior. Switching language retains the active upload, selected rules, treatment method, scan results, and review decisions. Changing the data or detection rules still discards the old scan to prevent stale match locations.
 
-未改动的上游代码保存在 `docs/upstream/ai_data_analyst.py.txt`，仅供对照，不作为应用执行代码。上游采用 Apache-2.0，本项目保留同一许可证及来源说明，见 `LICENSE`、`NOTICE`。
+The setting changes application controls, validation notes, and human-readable report descriptions. **Original column names, filenames, and cell contents are never automatically translated.** English pages may therefore contain Chinese from the source table. Masking is identical in both languages; the generated removal marker is `[REDACTED]` in English and `[已删除]` in Chinese.
 
-## 功能
+JSON field keys, action codes, and data positions stay stable. For v0.1 compatibility, the existing Chinese category-count keys under `summary.categories` are retained in both languages. Text values such as `application`, `entries[].category`, `rule_check`, and scope descriptions use the selected language. Python callers can pass `lang="en"` or `lang="zh"` to `read_dataset`, `scan_dataframe`, `apply_redactions`, and `build_report`. Omitted or unsupported locales fall back to Chinese. There is no new CLI or runtime translation service.
 
-- CSV：UTF-8 / UTF-8 BOM、GB18030、带 BOM 的 UTF-16；逗号分隔，首行为唯一非空列名。
-- XLSX：读取首个工作表，公式作为文本读取；不支持旧版 XLS。
-- 手机号：大陆手机号格式，可带 `86` / `+86`。
-- 邮箱：常见 ASCII 邮箱，包括混合文本、句末标点场景。
-- 身份证候选：18 位结构，检查出生日期及校验位，不核验行政区或真实身份；无效项仅列为疑似。
-- 在单元格内按位置替换，支持一格多处命中与原文对照。
-- 调整规则或更换数据会丢弃旧检查结果，防止套用陈旧位置。
-- 下载的 JSON 不复制原始完整命中值、文件名或列名；只记录数据行和列序号、类别、掩码预览、处理选择与规则说明。
-- 专用 CSV 导出为 UTF-8 BOM，对公式起始字符和控制字符加文本前缀；这会有意改变相关文本的导出表示。
+## Try the sample
 
-## 数据处理范围
+1. Click **Start inspection**. The six synthetic records produce 12 candidates: 11 selected for treatment and one invalid-checksum candidate retained by default.
+2. The third data record includes the order number `13812345678`. It matches a mobile-number format but represents a business identifier. Clear its **Process** checkbox. The processed count changes from 11 to 10, and the retained count from 1 to 2.
+3. Inspect the processed preview. Switch between **Mask** and **Remove fragments**, or display the original table for comparison.
+4. Download the processed CSV and the JSON inspection report.
 
-上传内容只在当前应用会话中处理，不自动保存上传文件，不调用模型或外部分析服务，也不使用跨会话数据缓存。浏览器连接运行 Streamlit 的服务器；若以后公开部署，上传数据将发送到该服务器，不能称为浏览器端处理。
+The fourth record contains an ID candidate with a mismatched checksum and is deselected by default. Decide whether to remove it based on the intended use of the data.
 
-单文件最多 5 MB、20,000 数据行、50 列、100,000 个数据单元格；单字段最多 10,000 字符；候选最多 10,000 个。超限时拒绝本次检查，不静默截断。XLSX 另限制解压后体积与内部文件数。
+The sample is explicitly synthetic. Its ID examples use the unverified administrative-region segment `999999` only to demonstrate structure and checksum checks; they do not establish that an ID was genuinely issued.
 
-规则匹配会有误报与漏报。本版不覆盖姓名、地址、银行卡号、图片等所有敏感信息，候选为零不代表不存在敏感信息。掩码仍保留部分特征，也不能作为匿名化证明。未勾选的候选会在处理后表格和导出 CSV 中保留原值。
+The [processed CSV](docs/demo-output/redacted_data.csv) and [JSON report](docs/demo-output/privacy_report.json) record the earlier v0.1 Chinese sample review shown in the screenshot. You can inspect those output formats without running the app.
 
-Excel 已按数值存储而丢失的前导零或长编号精度，应用无法恢复；需要源文件按文本保存这类字段。
+## Capabilities
 
-## 测试
+- **CSV input:** UTF-8 / UTF-8 BOM, GB18030, and BOM-marked UTF-16; comma-separated, with unique, nonempty column names in the first row.
+- **XLSX input:** first worksheet only; formulas are read as text. Legacy XLS is unsupported.
+- **Mobile candidates:** mainland China mobile-number formats, optionally prefixed by `86` / `+86`.
+- **Email candidates:** common ASCII formats, including mixed text and sentence-ending punctuation.
+- **Chinese ID candidates:** 18-character structure with birth-date and checksum checks. Administrative regions and real identity are unverified; invalid candidates are listed as uncertain and deselected by default.
+- **Human review:** every candidate can be deselected. Selected matches are replaced by position, including multiple matches within one cell, while surrounding content is preserved.
+- **CSV export:** UTF-8 BOM with text prefixes for potential formula-leading and control characters, including headers. These prefixes intentionally change the export representation of affected text.
+- **Minimal report:** row and column numbers, category, masked preview, review action, and rule notes. It omits full original matched values, filenames, and original column names.
+- **Bilingual interface and report descriptions:** explicit local dictionaries; no translation API, model, or paid backend.
+
+## Data handling and limitations
+
+Uploads are processed within the current application session, without automatic upload-file storage, model calls, external analysis services, or cross-session data caching. The browser connects to the server running Streamlit. If publicly deployed, uploaded data is sent to that server; processing is not browser-only.
+
+Limits per file: **5 MB, 20,000 data rows, 50 columns, 100,000 data cells, 10,000 characters per cell, and 10,000 candidates**. Oversized input is rejected rather than silently truncated. XLSX also limits uncompressed size to 50 MB and internal archive entries to 1,000.
+
+Rules can produce false positives and false negatives. This version does not cover all names, addresses, bank cards, images, or other sensitive information. Zero candidates does not establish the absence of sensitive information. Masking retains some features and is not proof of anonymization. Deselected candidates retain their original values in the preview and exported CSV.
+
+The app preserves text identifiers, leading zeros, empty values, and literal `NA` when they are present in the input. It cannot recover leading zeros or long-number precision already lost through numeric storage in Excel. Save such source fields as text.
+
+## Verification
 
 ```bash
 python -m unittest discover -s tests -v
 ```
 
-测试不调用网络或模型，包括识别边界、校验失败、误报取消、位置过期、源数据不变、输入保真、输入上限、公式导出、界面扫描和处理方式切换。GitHub Actions 使用同一命令。详细本地验证记录见 [docs/verification.md](docs/verification.md)。
+The 29 tests make no network or model calls. They cover matching boundaries, invalid dates and checksums, overlapping and multiple matches, false-positive cancellation, stale-position rejection, unchanged source data, input fidelity and limits, formula-safe CSV export, and Streamlit workflows. Bilingual regressions check dictionary-key and format-parameter parity, the English inspection/removal workflow, report compatibility, English input errors, retention of uploaded data and review decisions across language changes, and fresh translated option-widget identities with preserved selected values.
 
-## 项目结构
+GitHub Actions runs the same command. Local v0.2 results are recorded in [docs/i18n-verification.md](docs/i18n-verification.md); [docs/verification.md](docs/verification.md) retains the v0.1 history in Chinese. Local results do not establish that a later CI run passed; inspect the actual workflow run for the relevant commit.
+
+## Changes from the upstream example
+
+This project reorganizes the upload and Streamlit interaction approach from [awesome-llm-apps / AI Data Analysis Agent](https://github.com/Shubhamsaboo/awesome-llm-apps/tree/6c16b23f1bacd0fdf240bb5141ef45e59e82c306/starter_ai_agents/ai_data_analysis_agent).
+
+| Area | Upstream example | This project v0.2 |
+| --- | --- | --- |
+| Purpose | Natural-language data analysis | Privacy inspection and reviewed treatment before sharing |
+| Execution dependencies | GPT-4o, Agno, DuckDB tools | Deterministic rules, Pandas, OpenPyXL |
+| Files | Type conversion and temporary CSV files | In-memory processing; CSV text identifiers and literal NA preserved |
+| Review | No privacy-candidate review workflow | Per-candidate decisions with validation notes |
+| Treatment | Not implemented | Masking or fragment removal, preserving surrounding text |
+| Export | Analysis responses and UI output | Dedicated formula-safe CSV download and a JSON decision report |
+| Language | Upstream example interface | Selectable Chinese / English UI and report descriptions |
+| Verification | Example application | Core behavior and Streamlit workflow tests |
+
+The unchanged upstream code is retained in `docs/upstream/ai_data_analyst.py.txt` for comparison and is not application code.
+
+## Project structure
 
 ```text
-app.py                         Streamlit 界面
+app.py                         Streamlit interface
 privacy_workbench/
-  detection.py                 规则、校验、按片段脱敏
-  files.py                     CSV / XLSX 读取、受控导出
-  reporting.py                 检查报告
-sample_data/                   合成样例及生成脚本
-tests/                         核心与界面测试
-docs/                          来源、截图、实现与验证记录
+  detection.py                 Rules, validation, fragment treatment
+  files.py                     CSV / XLSX loading and controlled CSV export
+  reporting.py                 Inspection report
+  i18n.py                      Explicit bilingual text and locale fallback
+sample_data/                   Synthetic sample and generator
+tests/                         Core and interface tests
+docs/                          Provenance, screenshot, implementation and verification records
 .github/workflows/tests.yml    CI
 ```
 
-## 作品说明
+## Authorship and scope
 
-这是一次基于开源示例的工程二次开发；v0.1 的代码、文档和初始测试由 AI 辅助生成并在本地验证。用户本人独立理解、修改和运行的部分，应据后续实际记录补充，不能由自动生成的材料代替。
+This is an engineering adaptation of an open-source example. The v0.1 implementation and v0.2 bilingual changes, documentation, and tests were AI-assisted and locally verified by the assistant. The user's independently understood, modified, or executed work must be documented from subsequent actual evidence; generated artifacts do not establish independent development ability.
 
-当前版本是规则工具，不包含训练过的模型或自主 Agent。适合作为后续 RAG 文档入库检查模块的起点；真实生产数据上的识别质量尚未评测。
+This version is a rule-based tool, with no trained model or autonomous agent. It can serve as a starting point for privacy checks before RAG ingestion; detection quality on real production datasets has not been evaluated.
 
-## 后续可选的小迭代
+Possible future work includes labeled false-positive/false-negative cases with measured precision and recall, whole-column treatment and custom rules, and integration into a RAG ingestion workflow with provenance and version records. These are future directions, not implemented capabilities.
 
-- 为具体数据集补充带标注的漏报与误报案例，并分别报告准确率和召回率。
-- 增加整列处理与自定义规则，而不是持续叠加更多框架。
-- 将同一检查模块接入 RAG 文档入库流程，保留处理来源和版本。
+## License and provenance
 
-这些是后续方向，不属于本版已经实现的功能。
+Released under [Apache-2.0](LICENSE). The upstream project uses the same license. See [NOTICE](NOTICE) for attribution and modification details, and [docs/upstream](docs/upstream/) for the unchanged reference and provenance record. No affiliation or endorsement by the upstream authors is claimed.

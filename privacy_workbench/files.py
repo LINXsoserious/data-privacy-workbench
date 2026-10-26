@@ -12,6 +12,8 @@ from openpyxl import load_workbook
 from openpyxl.utils.exceptions import InvalidFileException
 from xml.etree.ElementTree import ParseError
 
+from .i18n import translate
+
 MAX_BYTES = 5 * 1024 * 1024
 MAX_ROWS = 20000
 MAX_COLUMNS = 50
@@ -28,42 +30,42 @@ def _string(value) -> str:
     return str(value)
 
 
-def _table(rows) -> pd.DataFrame:
+def _table(rows, lang: str = "zh") -> pd.DataFrame:
     iterator = iter(rows)
     try:
         header = [_string(value) for value in next(iterator)]
     except StopIteration as exc:
-        raise ValueError("文件为空，首行应是列名。") from exc
+        raise ValueError(translate("empty_table", lang)) from exc
     if not header or any(not name.strip() for name in header):
-        raise ValueError("首行存在空列名，请先补全表头。")
+        raise ValueError(translate("empty_header", lang))
     if any(len(name) > MAX_CELL_LENGTH for name in header):
-        raise ValueError(f"单个列名最多支持 {MAX_CELL_LENGTH:,} 字符。")
+        raise ValueError(translate("long_header", lang, limit=MAX_CELL_LENGTH))
     if len(header) != len(set(header)):
-        raise ValueError("存在重复列名，请先改成唯一列名。")
+        raise ValueError(translate("duplicate_header", lang))
     if len(header) > MAX_COLUMNS:
-        raise ValueError(f"最多支持 {MAX_COLUMNS} 列，请拆分文件。")
+        raise ValueError(translate("too_many_columns", lang, limit=MAX_COLUMNS))
     body = []
     for row in iterator:
         if not row:
             continue
         values = [_string(value) for value in row]
         if len(values) != len(header):
-            raise ValueError("数据列数与表头不一致，请检查分隔符和空列。")
+            raise ValueError(translate("inconsistent_columns", lang))
         if any(len(value) > MAX_CELL_LENGTH for value in values):
-            raise ValueError(f"单个单元格最多支持 {MAX_CELL_LENGTH:,} 字符。")
+            raise ValueError(translate("long_cell", lang, limit=MAX_CELL_LENGTH))
         body.append(values)
         if len(body) > MAX_ROWS or len(body) * len(header) > MAX_CELLS:
-            raise ValueError(f"最多支持 {MAX_ROWS:,} 行、{MAX_CELLS:,} 个数据单元格，请拆分文件。")
+            raise ValueError(translate("too_many_cells", lang, rows=MAX_ROWS, cells=MAX_CELLS))
     if not body:
-        raise ValueError("文件只有表头，没有可检查的数据。")
+        raise ValueError(translate("header_only", lang))
     return pd.DataFrame(body, columns=header, dtype=object)
 
 
-def read_dataset(data: bytes, filename: str) -> pd.DataFrame:
+def read_dataset(data: bytes, filename: str, lang: str = "zh") -> pd.DataFrame:
     if not data:
-        raise ValueError("文件为空，请选择包含表头和数据的文件。")
+        raise ValueError(translate("empty_file", lang))
     if len(data) > MAX_BYTES:
-        raise ValueError("文件超过 5 MB，请拆分后上传。")
+        raise ValueError(translate("file_too_large", lang))
     suffix = PurePath(filename).suffix.lower()
     if suffix == ".csv":
         try:
@@ -75,26 +77,26 @@ def read_dataset(data: bytes, filename: str) -> pd.DataFrame:
                 except UnicodeDecodeError:
                     text = data.decode("gb18030")
             if "\x00" in text:
-                raise ValueError("CSV 包含不支持的空字符，请重新导出为 UTF-8 CSV。")
-            return _table(csv.reader(io.StringIO(text, newline=""), strict=True))
+                raise ValueError(translate("null_csv", lang))
+            return _table(csv.reader(io.StringIO(text, newline=""), strict=True), lang)
         except (UnicodeError, csv.Error) as exc:
-            raise ValueError("无法读取 CSV，请检查编码、逗号分隔符与引号。") from exc
+            raise ValueError(translate("invalid_csv", lang)) from exc
     if suffix != ".xlsx":
-        raise ValueError("仅支持 .csv 和 .xlsx 文件；不支持旧版 .xls。")
+        raise ValueError(translate("unsupported_file", lang))
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             if len(archive.infolist()) > 1000 or sum(info.file_size for info in archive.infolist()) > MAX_XLSX_UNCOMPRESSED:
-                raise ValueError("Excel 解压后体积或内部文件数超限，请简化文件。")
+                raise ValueError(translate("large_xlsx", lang))
         workbook = load_workbook(io.BytesIO(data), read_only=True, data_only=False, keep_links=False)
         try:
             sheet = workbook.worksheets[0]
             if sheet.max_column and sheet.max_column > MAX_COLUMNS:
-                raise ValueError(f"最多支持 {MAX_COLUMNS} 列，请移除空白格式列或拆分文件。")
-            return _table(sheet.iter_rows(max_row=min(sheet.max_row or 1, MAX_ROWS + 2), values_only=True))
+                raise ValueError(translate("wide_xlsx", lang, limit=MAX_COLUMNS))
+            return _table(sheet.iter_rows(max_row=min(sheet.max_row or 1, MAX_ROWS + 2), values_only=True), lang)
         finally:
             workbook.close()
     except (zipfile.BadZipFile, InvalidFileException, KeyError, ParseError, IndexError) as exc:
-        raise ValueError("无法读取 XLSX，请确认文件未损坏且包含工作表。") from exc
+        raise ValueError(translate("invalid_xlsx", lang)) from exc
 
 
 def _safe_cell(value) -> str:
